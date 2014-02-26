@@ -25,13 +25,19 @@ void frontHandler(void *user_param, sci_group_t group, void *buffer, int size)
         msg[tail] = '\0';
     }
 
-    if (strncmp(ctl, "backcmd", sizeof(ctl)) == 0) {
-        fp = popen(msg, "r");
+    if (strncmp(ctl, "backres", sizeof(ctl)) == 0) {
+        char *cmd = NULL; 
+
+        log_info("Cloudlet %d responded message %s", be_id, msg);
+        cmd = strstr(msg, "|:-COMMAND-:|");
+        if (cmd == NULL) 
+            return;
+
+        cmd += strlen("|:-COMMAND:-|") + 1;
+        fp = popen(cmd, "r");
         bytes =  fread(result, sizeof(char), sizeof(result) - 1, fp);
         pclose(fp);
-        log_info("Cloudlet %d responded command %s", be_id, msg);
-    } else if (strncmp(ctl, "backres", sizeof(ctl)) == 0) {
-        log_info("Cloudlet %d responded message %s", be_id, msg);
+        log_info("Cloudlet %d responded command %s", be_id, cmd);
     }
 }
 
@@ -53,7 +59,7 @@ void backHandler(void *user_param, sci_group_t group, void *buffer, int size)
     if ((strncmp(cmd.format, "raw", sizeof(cmd.format)) == 0) && 
             (strncmp(cmd.control, "inter", strlen("inter")) == 0)) {
         int bytes, my_id, rc;
-        char ctl[16] = "backcmd";
+        char ctl[16] = "backres";
         void *bufs[3] = {NULL, ctl, NULL};
         int sizes[3] = {0, sizeof(ctl), 0};
         char result[1024] = {0};
@@ -74,11 +80,7 @@ void backHandler(void *user_param, sci_group_t group, void *buffer, int size)
         if (bytes > 0) {
             sizes[2] = bytes + 1;
             bufs[2] = result;
-            if (strstr(result, "frontback") == NULL) {
-                memset(ctl, '\0', sizeof(ctl));
-                strncpy(ctl, "backres", sizeof(ctl) - 1);
-            }
-            rc = SCI_Upload(SCHEDULE_FILTER, group, 3, bufs, sizes);
+            rc = SCI_Upload(SCI_FILTER_NULL, group, 3, bufs, sizes);
         }
     }
 }

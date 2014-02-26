@@ -83,7 +83,7 @@ int NetLayer::sendMessage(int beID, struct Command &cmd)
     return 0;
 }
 
-int NetLayer::sendMessage(struct Command &cmd)
+int NetLayer::sendMessage(struct Command &cmd, bool toAll)
 {
     int rc = -1;
     void *bufs[3];
@@ -99,7 +99,11 @@ int NetLayer::sendMessage(struct Command &cmd)
         bufs[2] = cmd.content;
         sizes[2] = cmd.size;
     }
-    rc = SCI_Bcast(SCHEDULE_FILTER, SCI_GROUP_ALL, nVec, bufs, sizes);
+    if (toAll) {
+        rc = SCI_Bcast(SCI_FILTER_NULL, SCI_GROUP_ALL, nVec, bufs, sizes);
+    } else {
+        rc = SCI_Bcast(SCHEDULE_FILTER, SCI_GROUP_ALL, nVec, bufs, sizes);
+    }
     if (rc != SCI_SUCCESS) {
         throw CommonException(CommonException::SCI_BCAST_ERROR); 
     }

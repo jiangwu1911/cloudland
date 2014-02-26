@@ -35,11 +35,7 @@ int filter_input(void *user_param, sci_group_t group, void *buf, int size)
 
     ResourceManager *rcManager = (ResourceManager *)user_param;
     memcpy(ctl, (char *)buf + sizeof(int), sizeof(ctl));
-    if (strncmp(ctl, "backcmd", sizeof(ctl)) == 0) {
-        bufs[0] = buf;
-        sizes[0] = size;
-        rc = SCI_Filter_upload(SCI_FILTER_NULL, group, 1, bufs, sizes);
-    } else if (strncmp(ctl, "report", sizeof(ctl)) == 0) {
+    if (strncmp(ctl, "report", sizeof(ctl)) == 0) {
         int beID = ((int *) buf)[0];
         rc = SCI_Query(SCI_AGENT_ID, &myID);
         bufs[0] = &myID;

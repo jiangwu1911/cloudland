@@ -21,7 +21,7 @@ class NetLayer {
         NetLayer();
         int initFE(char *backend, char *hostfile);
         int startBE();
-        int sendMessage(struct Command &cmd);
+        int sendMessage(struct Command &cmd, bool toAll = false);
         int sendMessage(int beID, struct Command &cmd);
         ~NetLayer();
         

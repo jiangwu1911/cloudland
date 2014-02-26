@@ -19,7 +19,6 @@ const char * REPORT_RC_CMD = "/opt/cloudland/scripts/backend/report_rc.sh";
 
 string pidFile;
 string hostList;
-struct sigaction oldSa;
 
 void set_oom_adj(int s)
 {
@@ -66,6 +65,8 @@ int main(int argc, char *argv[])
     FILE *fp = NULL;
     void *bufs[3] = {NULL, ctl, NULL};
     int sizes[3] = {0, sizeof(ctl), 0};
+    sigset_t sigs_to_block;
+    sigset_t old_sigs;
 
     set_oom_adj(-1000);
 
@@ -76,6 +77,9 @@ int main(int argc, char *argv[])
     if (rc != SCI_SUCCESS) {
         exit(-1);
     }
+    sigemptyset(&sigs_to_block);
+    pthread_sigmask(SIG_SETMASK, &sigs_to_block, &old_sigs);
+
     bufs[0] = &myID;
     sizes[0] = sizeof(myID);
     setsid();

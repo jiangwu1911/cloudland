@@ -12,12 +12,15 @@ struct Resource {
     int cpu;
     int bw_RX;
     int bw_TX;
+    int io_RD;
+    int io_WT;
 };
 
 class ResourceManager {
     private:
         map<int, struct Resource *> rcMap;
         Resource totalRC;
+        bool updated;
 
     public:
         ResourceManager();
