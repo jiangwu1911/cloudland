@@ -5,6 +5,7 @@
 #include <stdarg.h>
 #include <errno.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "log.hpp"
 

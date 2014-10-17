@@ -2,7 +2,7 @@
 #include "exception.hpp"
 
 UnixSocket::UnixSocket()
-    : sockFile("/tmp/cloudland.sock")
+    : sockFile("/opt/cloudland/run/cloudland.sock")
 {
     socket = ::socket(AF_UNIX, SOCK_DGRAM, 0);
     memset(&srvaddr, 0, sizeof(srvaddr));

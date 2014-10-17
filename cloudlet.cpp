@@ -8,6 +8,7 @@
 #include <linux/limits.h>
 #include <sci.h>
 #include <errno.h>
+#include <unistd.h>
 
 #include <fstream>
 
