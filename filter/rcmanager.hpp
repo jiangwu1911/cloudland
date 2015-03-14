@@ -7,13 +7,8 @@
 using namespace std;
 
 struct Resource {
-    int memory;
-    int disk;
-    int cpu;
-    int bw_RX;
-    int bw_TX;
-    int io_RD;
-    int io_WT;
+    int avaibility;
+    int hitRate;
 };
 
 class ResourceManager {
@@ -25,7 +20,7 @@ class ResourceManager {
     public:
         ResourceManager();
         ~ResourceManager();
-        int setResource(int id, char *rcMsg, int size);
+        int setAvailibility(int id, int avail);
         int totalResource();
         int getBestBranch();
         int getBest();

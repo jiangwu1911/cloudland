@@ -32,6 +32,7 @@ int NetLayer::initFE(char *backend, char *hostfile)
     sciInfo.fe_info.hndlr = (SCI_msg_hndlr *)&frontHandler;
     sciInfo.fe_info.filter_list = flist;
     sciInfo.fe_info.param = NULL;
+    sciInfo.enable_recover = 1;
 
     rc = SCI_Initialize(&sciInfo);
     if (rc != SCI_SUCCESS) {
@@ -50,6 +51,7 @@ int NetLayer::startBE()
     sciInfo.be_info.mode = SCI_INTERRUPT;
     sciInfo.be_info.hndlr = (SCI_msg_hndlr *)&backHandler;
     sciInfo.be_info.param = NULL;
+    sciInfo.enable_recover = 1;
 
     rc = SCI_Initialize(&sciInfo);
     if (rc != SCI_SUCCESS) {

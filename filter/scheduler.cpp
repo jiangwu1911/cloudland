@@ -24,7 +24,7 @@ int filter_terminate(void *user_param)
     return SCI_SUCCESS;
 }
 
-int filter_input(void *user_param, sci_group_t group, void *buf, int size)
+int filter_input(void *user_param, sci_group_t group, void *buf, int size, sci_exflag_t *exflag)
 {
     void *bufs[3] = {NULL, NULL, NULL};
     int sizes[3] = {0, 0, 0};
@@ -34,13 +34,35 @@ int filter_input(void *user_param, sci_group_t group, void *buf, int size)
     int rc;
 
     ResourceManager *rcManager = (ResourceManager *)user_param;
-    memcpy(ctl, (char *)buf + sizeof(int), sizeof(ctl));
+    if (exflag->flag == SCI_ERROR_CHILD) {
+        int num = 0;
+        int *errIds = NULL;
+
+        rc = SCI_Query(NUM_ERROR_SUCCESSORS, &num);
+        errIds = new int[num];
+        rc = SCI_Query(ERROR_SUCCESSORS, errIds);
+        for (int i = 0; i < num; i++) {
+            rcManager->setAvailibility(errIds[i], 0);
+        }
+        strncpy(ctl, "report", sizeof(ctl));
+    } else {
+        memcpy(ctl, (char *)buf + sizeof(int), sizeof(ctl));
+        if (strncmp(ctl, "report", sizeof(ctl)) == 0) {
+            char *p = NULL;
+            int avail = 0;
+            int beID = ((int *) buf)[0];
+            p = (char *)buf + sizeof(int) + sizeof(ctl);
+            if (p != NULL) {
+                avail = atoi(p);
+            }
+            rcManager->setAvailibility(beID, avail);
+        }
+    }
+
     if (strncmp(ctl, "report", sizeof(ctl)) == 0) {
-        int beID = ((int *) buf)[0];
         rc = SCI_Query(SCI_AGENT_ID, &myID);
         bufs[0] = &myID;
         sizes[0] = sizeof(myID);
-        rcManager->setResource(beID, (char *)buf + sizeof(int) + sizeof(ctl), size);
         rcManager->getTotalMsg(rcMsg, sizeof(rcMsg));
         bufs[1] = ctl;
         sizes[1] = sizeof(ctl);
