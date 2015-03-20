@@ -24,28 +24,60 @@ int filter_terminate(void *user_param)
     return SCI_SUCCESS;
 }
 
-int filter_input(void *user_param, sci_group_t group, void *buf, int size, sci_exflag_t *exflag)
+int upload_message(int group, char *cmd, char *msg)
 {
+    int rc = 0;
     void *bufs[3] = {NULL, NULL, NULL};
     int sizes[3] = {0, 0, 0};
+    char ctl[16] = {0};
     int myID = -1;
+
+    rc = SCI_Query(SCI_AGENT_ID, &myID);
+    bufs[0] = &myID;
+    sizes[0] = sizeof(myID);
+    strncpy(ctl, cmd, sizeof(ctl));
+    bufs[1] = ctl;
+    sizes[1] = sizeof(ctl);
+    bufs[2] = msg;
+    sizes[2] = strlen(msg) + 1;
+    rc = SCI_Filter_upload(SCI_FILTER_NULL, group, 3, bufs, sizes);
+
+    return rc;
+}
+
+int report_availibility(int group, ResourceManager *rcMgr)
+{
+    int rc = 0;
     char rcMsg[1024] = {0};
+    char ctl[16] = "report";
+
+    rcMgr->getTotalMsg(rcMsg, sizeof(rcMsg));
+    rc = upload_message(group, ctl, rcMsg);
+
+    return rc;
+}
+
+int filter_input(void *user_param, sci_group_t group, void *buf, int size, sci_exflag_t *exflag)
+{
     char ctl[16] = {0};
     int rc;
 
     ResourceManager *rcManager = (ResourceManager *)user_param;
     if (exflag->flag == SCI_ERROR_CHILD) {
         int num = 0;
-        int *errIds = NULL;
+        int *errIDs = NULL;
 
         rc = SCI_Query(NUM_ERROR_SUCCESSORS, &num);
-        errIds = new int[num];
-        rc = SCI_Query(ERROR_SUCCESSORS, errIds);
+        errIDs = new int[num];
+        rc = SCI_Query(ERROR_SUCCESSORS, errIDs);
         for (int i = 0; i < num; i++) {
-            rcManager->setAvailibility(errIds[i], 0);
+            char eID[32] = {0};
+            rcManager->setAvailibility(errIDs[i], 0);
+            snprintf(eID, sizeof(eID), "%d\n", errIDs[i]);
+            upload_message(group, "rescue", eID);
         }
-        strncpy(ctl, "report", sizeof(ctl));
-    } else {
+        report_availibility(group, rcManager);
+    } else if (buf != NULL) {
         memcpy(ctl, (char *)buf + sizeof(int), sizeof(ctl));
         if (strncmp(ctl, "report", sizeof(ctl)) == 0) {
             char *p = NULL;
@@ -56,25 +88,11 @@ int filter_input(void *user_param, sci_group_t group, void *buf, int size, sci_e
                 avail = atoi(p);
             }
             rcManager->setAvailibility(beID, avail);
+            report_availibility(group, rcManager);
+        } else if (strncmp(ctl, "inter", strlen("inter")) == 0) {
+            int bestID = rcManager->getBestBranch();
+            rc = SCI_Filter_bcast(SCI_FILTER_NULL, 1, &bestID, 1, &buf, &size);
         }
-    }
-
-    if (strncmp(ctl, "report", sizeof(ctl)) == 0) {
-        rc = SCI_Query(SCI_AGENT_ID, &myID);
-        bufs[0] = &myID;
-        sizes[0] = sizeof(myID);
-        rcManager->getTotalMsg(rcMsg, sizeof(rcMsg));
-        bufs[1] = ctl;
-        sizes[1] = sizeof(ctl);
-        bufs[2] = rcMsg;
-        sizes[2] = strlen(rcMsg) + 1;
-
-        rc = SCI_Filter_upload(SCI_FILTER_NULL, group, 3, bufs, sizes);
-    } else if (strncmp(ctl, "inter", strlen("inter")) == 0) {
-        int bestID = rcManager->getBestBranch();
-        bufs[0] = buf;
-        sizes[0] = size;
-        rc = SCI_Filter_bcast(SCI_FILTER_NULL, 1, &bestID, 1, bufs, sizes);
     }
 
     return SCI_SUCCESS;

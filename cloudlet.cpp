@@ -87,8 +87,14 @@ int main(int argc, char *argv[])
     fp = popen(REPORT_RC_CMD, "r");
     rc = SCI_Query(HEALTH_STATUS, &status);
     while (status == 0) {
+        char *p = NULL;
         memset(result, '\0', sizeof(result));
-        fgets(result, sizeof(result) - 1, fp);
+        p = fgets(result, sizeof(result) - 1, fp);
+        if (p == NULL) {
+            pclose(fp);
+            fp = popen(REPORT_RC_CMD, "r");
+            p = fgets(result, sizeof(result) - 1, fp);
+        }
         sizes[2] = strlen(result);
         bufs[2] = result;
         rc = SCI_Upload(SCHEDULE_FILTER, SCI_GROUP_ALL, 3, bufs, sizes);

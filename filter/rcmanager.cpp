@@ -68,7 +68,7 @@ int ResourceManager::totalResource()
 int ResourceManager::getTotalMsg(char *rcMsg, int size)
 {
     memset(rcMsg, '\0', size);
-    snprintf(rcMsg, size-1, "%d:n", totalRC.avaibility);
+    snprintf(rcMsg, size-1, "%d\n", totalRC.avaibility);
 
     return 0;
 }

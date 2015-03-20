@@ -10,15 +10,28 @@
 
 using namespace std;
 
-void frontHandler(void *user_param, sci_group_t group, void *buffer, int size)
+const char * RESCUE_CMD = "/opt/cloudland/scripts/frontend/rescue.sh";
+
+int exec_cmd(int id, char *cmd)
 {
     int bytes = 0;
+    FILE *fp = NULL;
+    char result[1024] = {0};
+
+    fp = popen(cmd, "r");
+    bytes =  fread(result, sizeof(char), sizeof(result) - 1, fp);
+    pclose(fp);
+    log_info("Backend or agent %d responded command %s, result %s", id, cmd, result);
+
+    return 0;
+}
+
+void frontHandler(void *user_param, sci_group_t group, void *buffer, int size)
+{
     int be_id = ((int *) buffer)[0];
     char ctl[16] = {0};
     char *msg = (char *)((char *) buffer + sizeof(int) + sizeof(ctl));
     int tail = size - sizeof(be_id) - sizeof(ctl) - 2;
-    char result[1024] = {0};
-    FILE *fp = NULL;
 
     memcpy(ctl, (char *) buffer + sizeof(int), sizeof(ctl));
     if (msg[tail] == '\n') {
@@ -34,10 +47,11 @@ void frontHandler(void *user_param, sci_group_t group, void *buffer, int size)
             return;
 
         cmd += strlen("|:-COMMAND:-|") + 1;
-        fp = popen(cmd, "r");
-        bytes =  fread(result, sizeof(char), sizeof(result) - 1, fp);
-        pclose(fp);
-        log_info("Cloudlet %d responded command %s", be_id, cmd);
+        exec_cmd(be_id, cmd);
+    } else if (strncmp(ctl, "rescue", sizeof(ctl)) == 0) {
+        char cmd[256] = {0};
+        snprintf(cmd, sizeof(cmd), "%s %s", RESCUE_CMD, msg);
+        exec_cmd(be_id, cmd);
     }
 }
 
